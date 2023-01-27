@@ -22,19 +22,31 @@ def parse_args():
     return args
 
 
+def get_limits(gh_sess, type_of_limit):
+    """
+    Return the search limit and the date for refresh
+    :param: gh_sess - an initialized Github session
+    :param: type_of_limit - string, either 'core' or 'search'
+    Return [limitremaining(int), date(timestamp)]
+    """
+    if type_of_limit not in ["core", "search"]:
+        raise Exception("Type of rate must be 'core' or 'search'")
+    rates = gh_sess.rate_limit()["resources"][type_of_limit]
+    return [rates["remaining"], rates["reset"]]
+
+
 def main():
     """
     Check the remaining rate for the user, printing out the levels, as well as time of next reset
     """
     args = parse_args()
     gh_sess = login(token=args.token)
-    rates = gh_sess.rate_limit()
-    limit_remain = rates["resources"]["core"]["remaining"]
-    refreshtime = datetime.fromtimestamp(rates["resources"]["core"]["reset"])
-    print(f"Remaining limits: {limit_remain}, which will reset at {refreshtime}")
-    searchlimit = rates["resources"]["search"]["remaining"]
-    searchrefresh = datetime.fromtimestamp(rates["resources"]["search"]["reset"])
-    print(f"Remaining search limits: {searchlimit}, which will reset at {searchrefresh}")
+    api_limit, api_timestamp = get_limits(gh_sess, "core")
+    refreshtime = datetime.fromtimestamp(api_timestamp)
+    print(f"Remaining limits: {api_limit}, which will reset at {refreshtime}")
+    search_limit, search_timestamp = get_limits(gh_sess, "search")
+    refreshtime = datetime.fromtimestamp(search_timestamp)
+    print(f"Remaining search limits: {search_limit}, which will reset at {refreshtime}")
 
 
 if __name__ == "__main__":
